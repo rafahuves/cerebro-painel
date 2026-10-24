@@ -40,7 +40,12 @@
     if (window.CERBERO_FETCH_FALHOU) avisos.push('Falha ao buscar a publicação. Exibindo a última versão recebida.');
     $('#alert').hidden = !avisos.length; $('#alert').textContent = avisos.join(' ');
     $('.brand p').textContent = 'Observação somente leitura · hipóteses não validadas · sem ordens ou posições';
-    $('#hero').innerHTML = kpi('Contratos monitorados', c.contratos_operacionais ?? '—', 'Futuros USD-M') +
+    const f = A.financeiro || {};
+    const capital = f.capital_referencia == null || !f.moeda ? '—' :
+      new Intl.NumberFormat('pt-BR', {maximumFractionDigits: 8}).format(f.capital_referencia) + ' ' + esc(f.moeda);
+    $('#hero').innerHTML = kpi('Capital de referência', capital, 'valor fictício configurado para a sessão', 'accent') +
+      kpi('Lucro / prejuízo', 'Não calculado', 'observador sem operações ou posições') +
+      kpi('Contratos monitorados', c.contratos_operacionais ?? '—', 'Futuros USD-M') +
       kpi('Cobertura', (c.cobertura_pct ?? '—') + '%', 'cotações disponíveis') +
       kpi('Oportunidades teóricas', h.oportunidades_total ?? '—', 'total nesta sessão; não são operações') +
       kpi('Elegíveis no ciclo', c.elegiveis_novas ?? '—', 'hipóteses após filtros');

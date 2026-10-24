@@ -39,12 +39,19 @@
     if (h.circuito_futuros_aberto) avisos.push('Coleta de Futuros temporariamente em pausa.');
     if (window.CERBERO_FETCH_FALHOU) avisos.push('Falha ao buscar a publicação. Exibindo a última versão recebida.');
     $('#alert').hidden = !avisos.length; $('#alert').textContent = avisos.join(' ');
-    $('.brand p').textContent = 'Observação somente leitura · hipóteses não validadas · sem ordens ou posições';
+    const P = A.paper;
+    $('.brand p').textContent = P ? 'Teste em papel · Futuros USD-M · dinheiro fictício · nenhuma ordem real'
+      : 'Observação somente leitura · hipóteses não validadas · sem ordens ou posições';
     const f = A.financeiro || {};
     const capital = f.capital_referencia == null || !f.moeda ? '—' :
       new Intl.NumberFormat('pt-BR', {maximumFractionDigits: 8}).format(f.capital_referencia) + ' ' + esc(f.moeda);
     $('#hero').innerHTML = kpi('Capital de referência', capital, 'valor fictício configurado para a sessão', 'accent') +
-      kpi('Lucro / prejuízo', 'Não calculado', 'observador sem operações ou posições') +
+      (P ? kpi('Patrimônio fictício', money(P.patrimonio) + ' USDT', 'saldo ' + money(P.saldo) + ' · margem em uso ' + money(P.margem_usada)) +
+        kpi('Lucro / prejuízo', '<span class="' + tone(num(P.pnl_realizado) + num(P.pnl_aberto)) + '">' + money(num(P.pnl_realizado) + num(P.pnl_aberto), true) + '</span>',
+          'realizado ' + money(P.pnl_realizado, true) + ' · aberto ' + money(P.pnl_aberto, true) + ' · após taxas') +
+        kpi('Operações fechadas', (P.metricas || {}).operacoes ?? 0, 'acerto ' + ((P.metricas || {}).win_rate_pct ?? '—') + '% · PF ' + ((P.metricas || {}).profit_factor ?? '—')) +
+        kpi('Drawdown máx.', ((P.metricas || {}).drawdown_max_pct ?? 0) + '%', P.kill_switch ? 'KILL SWITCH ATIVO' : 'suspende em 8%')
+        : kpi('Lucro / prejuízo', 'Não calculado', 'observador sem operações ou posições')) +
       kpi('Contratos monitorados', c.contratos_operacionais ?? '—', 'Futuros USD-M') +
       kpi('Cobertura', (c.cobertura_pct ?? '—') + '%', 'cotações disponíveis') +
       kpi('Oportunidades teóricas', h.oportunidades_total ?? '—', 'total nesta sessão; não são operações') +
@@ -55,7 +62,7 @@
       kpi('Cobertura Spot', (h.spot_ultima_cobertura_pct ?? '—') + '%', when(h.spot_ultima_utc)) +
       kpi('Último ciclo saudável', when(h.ultimo_ciclo_ok_utc));
     $('#chart').closest('section').hidden = true;
-    $('#ops').closest('.grid2').style.display = 'none';
+    if (P) renderPaper(P); else $('#ops').closest('.grid2').style.display = 'none';
     $('#dec').previousElementSibling.querySelector('h2').textContent = 'Sinais hipotéticos recentes';
     $('#decNote').textContent = 'Até 100 registros · valores de referência · nenhuma ordem';
     $('#dec').innerHTML = (A.sinais || []).slice().reverse().map((x) => '<div class="dec"><div class="dec-h"><b>' + esc(x.simbolo) +
@@ -64,7 +71,34 @@
       esc(x.preco_referencia) + ' USDT · stop teórico: ' + esc(x.stop_referencia) + ' USDT</div><small>' + when(x.instante_utc) +
       ' · validade: ' + when(x.validade_utc) + (Date.parse(x.validade_utc) < Date.now() ? ' (expirada)' : '') + '</small></div>').join('') ||
       '<div class="empty">Nenhuma oportunidade teórica registrada.</div>';
+    if (P) { $('#foot').textContent = 'Teste em papel: posições fictícias simuladas com cotações públicas, taxas, spread, slippage e funding. Nenhuma ordem é enviada à Binance. Estratégias sem backtest validado; avalie só após ~100 operações fechadas. Publicação a cada 120 s; o Mac precisa permanecer ligado.'; return; }
     $('#foot').textContent = 'Somente leitura de cotações públicas. Hipóteses sem backtest validado; nenhuma ordem ou posição, real ou fictícia. Publicação automática a cada 120 s, consulta a cada 60 s. O Mac precisa permanecer ligado e conectado.';
+  }
+
+  function renderPaper(P) {
+    MOEDA = 'USDT';
+    $('#ops').closest('.grid2').style.display = '';
+    const ops = (P.operacoes || []).slice().reverse();
+    $('#opsNote').textContent = ops.length ? ops.length + ' eventos · mais recentes primeiro' : '';
+    $('#ops').innerHTML = ops.length ? '<table><thead><tr><th>Quando</th><th>Ativo</th><th>Ação</th><th class="r">Qtd</th><th class="r">Preço</th><th class="r">Taxa</th><th class="r">Resultado</th></tr></thead><tbody>' +
+      ops.map((o) => {
+        const abre = o.evento === 'abertura', buy = abre === (o.lado === 'LONG');
+        const acao = (abre ? 'abre ' : 'fecha ') + o.lado + (abre ? '' : ' (' + esc(o.motivo || '?') + ')');
+        return '<tr><td>' + when(o.instante_utc) + '</td><td><b>' + esc(o.simbolo) + '</b><br><small class="muted">' + esc(o.estrategia) + '</small></td><td><span class="side ' + (buy ? 'buy' : 'sell') + '">' + (buy ? '↓ COMPRA' : '↑ VENDA') + '</span><br><small>' + acao + '</small></td>' +
+          '<td class="r">' + qty(o.qtd) + '</td><td class="r">' + money(o.preco) + '</td><td class="r">' + money(o.taxa) + '</td><td class="r">' +
+          (abre ? '<span class="muted">—</span>' : '<span class="' + tone(o.pnl_liquido) + '">' + arrow(o.pnl_liquido) + money(o.pnl_liquido, true) + '</span>') + '</td></tr>';
+      }).join('') + '</tbody></table>' : '<div class="empty"><div><b>Nenhuma compra ou venda ainda</b>Aguardando sinal aprovado pelo gestor de risco.</div></div>';
+    const pos = P.posicoes || [];
+    $('#pos').innerHTML = pos.length ? '<table><thead><tr><th>Ativo</th><th class="r">Entrada</th><th class="r">Agora</th><th class="r">Stop</th><th class="r">Alvo</th><th class="r">Resultado</th></tr></thead><tbody>' +
+      pos.map((x) => { const r = (x.lado === 'LONG' ? 1 : -1) * (num(x.marca) - num(x.entrada)) * num(x.qtd);
+        return '<tr><td><b>' + esc(x.simbolo) + '</b> ' + esc(x.lado) + '<br><small class="muted">' + esc(x.estrategia) + '</small></td><td class="r">' + money(x.entrada) + '</td><td class="r">' + money(x.marca) +
+          '</td><td class="r">' + money(x.stop) + '</td><td class="r">' + money(x.alvo) + '</td><td class="r"><span class="' + tone(r) + '">' + arrow(r) + money(r, true) + '</span></td></tr>'; }).join('') + '</tbody></table>'
+      : '<div class="empty" style="min-height:70px">Nenhuma posição aberta.</div>';
+    const est = (P.metricas || {}).por_estrategia || {};
+    $('#rej').previousElementSibling.querySelector('h2').textContent = 'Resultado por estratégia';
+    $('#rej').innerHTML = Object.keys(est).length ? '<table><thead><tr><th>Estratégia</th><th class="r">Ops</th><th class="r">Acerto</th><th class="r">Resultado</th></tr></thead><tbody>' +
+      Object.entries(est).map(([k, v]) => '<tr><td>' + esc(k) + '</td><td class="r">' + esc(v.operacoes) + '</td><td class="r">' + esc(v.win_rate_pct ?? '—') + '%</td><td class="r"><span class="' + tone(v.pnl_liquido) + '">' + money(v.pnl_liquido, true) + '</span></td></tr>').join('') + '</tbody></table>'
+      : '<div class="empty" style="min-height:60px">Ainda sem operações fechadas.</div>';
   }
 
   function render() {

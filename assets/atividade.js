@@ -50,7 +50,7 @@
       kpi('Cobertura Spot', (h.spot_ultima_cobertura_pct ?? '—') + '%', when(h.spot_ultima_utc)) +
       kpi('Último ciclo saudável', when(h.ultimo_ciclo_ok_utc));
     $('#chart').closest('section').hidden = true;
-    $('#ops').closest('.grid2').hidden = true;
+    $('#ops').closest('.grid2').style.display = 'none';
     $('#dec').previousElementSibling.querySelector('h2').textContent = 'Sinais hipotéticos recentes';
     $('#decNote').textContent = 'Até 100 registros · valores de referência · nenhuma ordem';
     $('#dec').innerHTML = (A.sinais || []).slice().reverse().map((x) => '<div class="dec"><div class="dec-h"><b>' + esc(x.simbolo) +

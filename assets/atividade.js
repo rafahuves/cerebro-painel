@@ -26,9 +26,46 @@
   };
   const kpi = (t, v, s, cls) => '<div class="kpi ' + (cls || '') + '"><div class="t">' + t + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
 
+  function renderObservacao(A) {
+    const h = A.saude || {}, c = A.ultimo_ciclo || {};
+    const idade = (Date.now() - new Date(A.status_utc).getTime()) / 1000;
+    const recente = Number.isFinite(idade) && idade >= -60 && idade < 300;
+    const ok = recente && A.estado === 'rodando' && !h.erros_seguidos;
+    $('#live').innerHTML = '<span class="pulse ' + (ok ? '' : 'warn') + '"></span><div><b>' + esc(A.estado) +
+      '</b> · ciclo ' + esc(h.ciclos) + '<br>Observador: ' + when(A.status_utc) + ' · publicação: ' + when(A.gerado_em) + '</div>';
+    const avisos = [];
+    if (!recente) avisos.push('Observador sem atualização recente. Estes são os últimos dados recebidos; verifique o Mac e a conexão.');
+    if (h.erros_seguidos) avisos.push('Observação degradada: ' + h.erros_seguidos + ' erros consecutivos.');
+    if (h.circuito_futuros_aberto) avisos.push('Coleta de Futuros temporariamente em pausa.');
+    if (window.CERBERO_FETCH_FALHOU) avisos.push('Falha ao buscar a publicação. Exibindo a última versão recebida.');
+    $('#alert').hidden = !avisos.length; $('#alert').textContent = avisos.join(' ');
+    $('.brand p').textContent = 'Observação somente leitura · hipóteses não validadas · sem ordens ou posições';
+    $('#hero').innerHTML = kpi('Contratos monitorados', c.contratos_operacionais ?? '—', 'Futuros USD-M') +
+      kpi('Cobertura', (c.cobertura_pct ?? '—') + '%', 'cotações disponíveis') +
+      kpi('Oportunidades teóricas', h.oportunidades_total ?? '—', 'total nesta sessão; não são operações') +
+      kpi('Elegíveis no ciclo', c.elegiveis_novas ?? '—', 'hipóteses após filtros');
+    $('#small').innerHTML = kpi('Analisados', c.analisados ?? '—', 'último ciclo') +
+      kpi('Aprovados nos filtros', c.aprovados_filtros ?? '—') +
+      kpi('Erros consecutivos', h.erros_seguidos ?? '—') + kpi('Erros totais', h.erros_total ?? '—') +
+      kpi('Cobertura Spot', (h.spot_ultima_cobertura_pct ?? '—') + '%', when(h.spot_ultima_utc)) +
+      kpi('Último ciclo saudável', when(h.ultimo_ciclo_ok_utc));
+    $('#chart').closest('section').hidden = true;
+    $('#ops').closest('.grid2').hidden = true;
+    $('#dec').previousElementSibling.querySelector('h2').textContent = 'Sinais hipotéticos recentes';
+    $('#decNote').textContent = 'Até 100 registros · valores de referência · nenhuma ordem';
+    $('#dec').innerHTML = (A.sinais || []).slice().reverse().map((x) => '<div class="dec"><div class="dec-h"><b>' + esc(x.simbolo) +
+      '</b><span class="badge">' + esc(x.lado) + ' · ' + esc(x.estrategia) + '</span></div><p>' +
+      (x.elegivel ? 'Elegível pelos filtros' : 'Descartada pelos filtros') + ' · hipótese não validada</p><div class="ind">Referência: ' +
+      esc(x.preco_referencia) + ' USDT · stop teórico: ' + esc(x.stop_referencia) + ' USDT</div><small>' + when(x.instante_utc) +
+      ' · validade: ' + when(x.validade_utc) + (Date.parse(x.validade_utc) < Date.now() ? ' (expirada)' : '') + '</small></div>').join('') ||
+      '<div class="empty">Nenhuma oportunidade teórica registrada.</div>';
+    $('#foot').textContent = 'Somente leitura de cotações públicas. Hipóteses sem backtest validado; nenhuma ordem ou posição, real ou fictícia. Publicação automática a cada 120 s, consulta a cada 60 s. O Mac precisa permanecer ligado e conectado.';
+  }
+
   function render() {
     const A = window.CERBERO_ATIVIDADE;
     if (!A) { $('#hero').innerHTML = '<div class="card empty">Arquivo de dados ausente. Rode <code>python3 grafo/assets/gerar_atividade.py</code>.</div>'; return; }
+    if (A.modo === 'observacao') { renderObservacao(A); return; }
     MOEDA = A.moeda || 'BRL';
     const S = A.sessao;
     if (!S || !S.status) {
@@ -200,8 +237,8 @@
   function reloadRemote() {
     fetch(REMOTA + '?t=' + Date.now(), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((d) => { window.CERBERO_ATIVIDADE = d; render(); })
-      .catch(() => { if (!window.CERBERO_ATIVIDADE) $('#hero').innerHTML = '<div class="card empty">Não foi possível carregar os dados agora. Tente de novo em alguns minutos.</div>'; });
+      .then((d) => { window.CERBERO_FETCH_FALHOU = false; window.CERBERO_ATIVIDADE = d; render(); })
+      .catch(() => { window.CERBERO_FETCH_FALHOU = true; if (window.CERBERO_ATIVIDADE) render(); if (!window.CERBERO_ATIVIDADE) $('#hero').innerHTML = '<div class="card empty">Não foi possível carregar os dados agora. Tente de novo em alguns minutos.</div>'; });
   }
   // Recarrega o arquivo de dados (funciona abrindo direto do Finder, sem servidor).
   function reload() {
@@ -215,7 +252,7 @@
   if (REMOTA) { reloadRemote(); setInterval(reloadRemote, 60000); }
   else if (window.CERBERO_FOTO) render();
   else { render(); setInterval(reload, 20000); }
-  setInterval(() => { const a = $('#age'); if (a && window.CERBERO_ATIVIDADE) a.textContent = ago(window.CERBERO_ATIVIDADE.gerado_em); }, 5000);
+  setInterval(() => { if (window.CERBERO_ATIVIDADE?.modo === 'observacao') render(); const a = $('#age'); if (a && window.CERBERO_ATIVIDADE) a.textContent = ago(window.CERBERO_ATIVIDADE.gerado_em); }, 5000);
   let rt;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 150); });
 })();

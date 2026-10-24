@@ -7,7 +7,7 @@
   const num = (v) => (v == null || v === '' || isNaN(+v) ? 0 : +v);
   let MOEDA = 'BRL';
   const money = (v, sign) => {
-    const s = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: MOEDA }).format(Math.abs(num(v)));
+    const s = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: MOEDA === 'USDT' ? 'USD' : MOEDA }).format(Math.abs(num(v)));
     if (!sign) return num(v) < 0 ? '−' + s : s;
     return (num(v) > 0.004 ? '+' : num(v) < -0.004 ? '−' : '') + s;
   };
@@ -235,7 +235,7 @@
   // Versão publicada: busca o JSON enviado pelo Mac (window.CERBERO_FONTE_REMOTA).
   const REMOTA = window.CERBERO_FONTE_REMOTA;
   function reloadRemote() {
-    fetch(REMOTA + '?t=' + Date.now(), { cache: 'no-store' })
+    fetch(REMOTA + (REMOTA.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((d) => { window.CERBERO_FETCH_FALHOU = false; window.CERBERO_ATIVIDADE = d; render(); })
       .catch(() => { window.CERBERO_FETCH_FALHOU = true; if (window.CERBERO_ATIVIDADE) render(); if (!window.CERBERO_ATIVIDADE) $('#hero').innerHTML = '<div class="card empty">Não foi possível carregar os dados agora. Tente de novo em alguns minutos.</div>'; });

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CÉRBERO Atividade</title>
+<link rel="stylesheet" href="assets/cerbero-brain.css">
+<link rel="stylesheet" href="assets/atividade.css">
+</head>
+<body class="dash">
+<header class="dash-top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div>
+      <h1>CÉRBERO <span>ATIVIDADE</span></h1>
+      <p>Simulação paper · dinheiro fictício · sem ordens reais</p>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Abas">
+    <a href="galaxia.html">Galáxia</a>
+    <a href="./" class="on" aria-current="page">Atividade</a>
+  </nav>
+  <div class="live" id="live"></div>
+</header>
+
+<main class="dash-main">
+  <div class="alert" id="alert" hidden></div>
+
+  <section class="kpis hero" id="hero"></section>
+  <section class="kpis small" id="small"></section>
+
+  <section class="card">
+    <div class="card-h"><h2>Patrimônio × capital inicial</h2><span class="muted" id="chartNote"></span></div>
+    <div class="chart" id="chart"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="card-h"><h2>Compras e vendas</h2><span class="muted" id="opsNote"></span></div>
+      <div class="table-wrap" id="ops"></div>
+    </section>
+    <section class="card">
+      <div class="card-h"><h2>Posições abertas</h2></div>
+      <div id="pos"></div>
+      <div class="card-h" style="margin-top:18px"><h2>Bloqueadas pelo risco</h2></div>
+      <div id="rej"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-h"><h2>O que o motor decidiu (último ciclo por ativo)</h2><span class="muted" id="decNote"></span></div>
+    <div class="decisions" id="dec"></div>
+  </section>
+
+  <footer class="dash-foot" id="foot"></footer>
+</main>
+<div class="tooltip" id="tip" hidden></div>
+
+<script>window.CERBERO_FONTE_REMOTA = "https://raw.githubusercontent.com/rafahuves/cerebro-painel/dados/atividade.json";</script>
+<script src="assets/atividade.js"></script>
+</body>
+</html>

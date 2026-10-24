@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CÉRBERO BRAIN 3D</title>
+<link rel="stylesheet" href="assets/cerbero-brain.css">
+<style>.p-actions a.btn[href^="../"]{display:none}</style>
+</head>
+<body>
+<div id="stage" aria-label="Constelação do grafo CÉRBERO"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div>
+      <h1>CÉRBERO <span>BRAIN 3D</span></h1>
+      <p id="subtitle">Constelação de conhecimento · grafo/grafo.json</p>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Abas">
+    <a href="galaxia.html" class="on" aria-current="page">Galáxia</a>
+    <a href="./">Atividade</a>
+  </nav>
+  <div class="search">
+    <input id="q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="Pesquisar nós, agentes, comandos…" aria-label="Pesquisar nós">
+    <kbd>/</kbd>
+    <ul id="results" role="listbox" hidden></ul>
+  </div>
+  <div class="hud">
+    <div class="stat"><b id="sNodes">–</b><span>nós exibidos<em id="sNodesT"></em></span></div>
+    <div class="stat"><b id="sLinks">–</b><span>relações representadas<em id="sLinksT"></em></span></div>
+  </div>
+</header>
+
+<aside class="filters glass" id="filters">
+  <section>
+    <h2>Visualização</h2>
+    <div class="seg" id="mode" role="group" aria-label="Modo de visualização">
+      <button data-mode="simple">Simplificada</button>
+      <button data-mode="full">Completa</button>
+    </div>
+    <p class="hint" id="modeHint"></p>
+    <div class="breakdown" id="breakdown"></div>
+  </section>
+  <section>
+    <h2>Constelações</h2>
+    <ul class="areas" id="areaList"></ul>
+  </section>
+  <section>
+    <h2>Relações</h2>
+    <label class="chk"><input type="checkbox" id="fTyped" checked><span>Tipadas</span><em id="cTyped"></em></label>
+    <label class="chk"><input type="checkbox" id="fMention" checked><span>Menções (<code>menciona</code>)</span><em id="cMention"></em></label>
+    <select id="fRel" aria-label="Tipo de relação"></select>
+  </section>
+  <section>
+    <h2>Tipo de nó</h2>
+    <select id="fTipo" aria-label="Tipo de nó"></select>
+  </section>
+  <section class="integrity" id="integrity"></section>
+</aside>
+
+<aside class="panel glass" id="panel" hidden>
+  <button class="close" id="panelClose" aria-label="Fechar painel">×</button>
+  <div id="panelBody"></div>
+</aside>
+
+<div class="toolbar">
+  <button id="bFilters" class="only-narrow">Filtros</button>
+  <button id="bFit" title="Enquadrar a constelação">Recentrar</button>
+  <button id="bTop" title="Olhar de cima (2D)">Vista de cima</button>
+  <button id="bLabels" title="Alternar rótulos">Rótulos: todos</button>
+  <button id="bHelp" title="Atalhos">?</button>
+</div>
+<div class="help glass" id="help" hidden>
+  <b>Navegação</b>
+  <p>Arrastar: girar · Shift/⌘ + arrastar ou botão direito: mover · Rolar ou pinça: zoom</p>
+  <p>Clique numa constelação para abrir/recolher seus nós. Clique num nó para ver detalhes.</p>
+  <p><kbd>/</kbd> pesquisar · <kbd>Esc</kbd> limpar seleção</p>
+</div>
+<div class="tooltip" id="tip" hidden></div>
+
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/OrbitControls.js"></script>
+<script src="assets/vendor/CSS2DRenderer.js"></script>
+<script src="assets/cerbero-data.js"></script>
+<script src="assets/cerbero-brain.js"></script>
+</body>
+</html>

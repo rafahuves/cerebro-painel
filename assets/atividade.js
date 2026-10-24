@@ -1,0 +1,221 @@
+/* Aba Atividade — lê window.CERBERO_ATIVIDADE (gerado por gerar_atividade.py).
+ * Só exibe; não envia nada a lugar nenhum. Recarrega o arquivo de dados a cada 20 s. */
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (v) => (v == null || v === '' || isNaN(+v) ? 0 : +v);
+  let MOEDA = 'BRL';
+  const money = (v, sign) => {
+    const s = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: MOEDA }).format(Math.abs(num(v)));
+    if (!sign) return num(v) < 0 ? '−' + s : s;
+    return (num(v) > 0.004 ? '+' : num(v) < -0.004 ? '−' : '') + s;
+  };
+  const qty = (v) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 }).format(num(v));
+  const pct = (v) => (v > 0.0004 ? '+' : v < -0.0004 ? '−' : '') + Math.abs(v * 100).toFixed(2).replace('.', ',') + '%';
+  const tone = (v) => (num(v) > 0.004 ? 'pos' : num(v) < -0.004 ? 'neg' : 'zero');
+  const arrow = (v) => (num(v) > 0.004 ? '▲ ' : num(v) < -0.004 ? '▼ ' : '');
+  const when = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+  const ago = (iso) => {
+    const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    return s < 60 ? Math.round(s) + ' s' : s < 3600 ? Math.round(s / 60) + ' min' : (s / 3600).toFixed(1).replace('.', ',') + ' h';
+  };
+  const kpi = (t, v, s, cls) => '<div class="kpi ' + (cls || '') + '"><div class="t">' + t + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
+
+  function render() {
+    const A = window.CERBERO_ATIVIDADE;
+    if (!A) { $('#hero').innerHTML = '<div class="card empty">Arquivo de dados ausente. Rode <code>python3 grafo/assets/gerar_atividade.py</code>.</div>'; return; }
+    MOEDA = A.moeda || 'BRL';
+    const S = A.sessao;
+    if (!S || !S.status) {
+      $('#hero').innerHTML = '<div class="card empty"><div><b>Nenhuma sessão paper encontrada</b>Inicie uma sessão com <code>python3 scripts/sessao_paper.py</code>.</div></div>';
+      return;
+    }
+    const st = S.status, r = st.resumo || {};
+    const cap = num(A.capital_inicial), pat = num(r.patrimonio), saldo = num(r.saldo), expo = num(r.exposicao_total);
+    const total = pat - cap, totalPct = cap ? total / cap : 0;
+    const custoAberto = Object.values(S.posicoes_custo || {}).reduce((a, p) => a + num(p.custo), 0);
+    const naoReal = expo - custoAberto;
+    const compras = S.operacoes.filter((o) => o.lado === 'COMPRA'), vendas = S.operacoes.filter((o) => o.lado !== 'COMPRA');
+    const gasto = compras.reduce((a, o) => a + num(o.valor), 0), recebido = vendas.reduce((a, o) => a + num(o.valor), 0);
+    const ganhos = vendas.filter((o) => num(o.resultado) > 0).length, perdas = vendas.filter((o) => num(o.resultado) < 0).length;
+
+    // ---- estado ao vivo ----
+    const FOTO = window.CERBERO_FOTO;
+    const parado = st.estado !== 'rodando' && st.estado !== 'iniciando';
+    const atraso = (Date.now() - new Date(st.instante_utc).getTime()) / 1000;
+    const atrasado = !FOTO && !parado && atraso > 180;
+    $('#live').innerHTML = '<span class="pulse ' + (parado ? 'off' : atrasado ? 'warn' : '') + '"></span><div><b>' +
+      esc({ rodando: 'Rodando', iniciando: 'Iniciando', encerrado: 'Encerrada', parado_por_risco: 'Parada pelo risco', erro: 'Erro' }[st.estado] || st.estado) +
+      '</b> · ciclo ' + esc(st.ciclo) + ' · sessão ' + esc(S.id) + '<br>' + (FOTO ? 'retrato de ' + when(A.gerado_em)
+        : 'motor atualizou há ' + ago(st.instante_utc) + ' · painel lido há <span id="age">' + ago(A.gerado_em) + '</span>') + '</div>';
+    const avisos = [];
+    if (atrasado) avisos.push('O motor não atualiza o status há ' + ago(st.instante_utc) + '. O processo pode ter parado.');
+    if (FOTO) avisos.push('Retrato dos números de ' + when(A.gerado_em) + '. A página é atualizada quando uma nova versão é publicada; o bot continua rodando no Mac.');
+    else if (REMOTA && (Date.now() - new Date(A.gerado_em).getTime()) / 1000 > 900)
+      avisos.push('Sem novidades há ' + ago(A.gerado_em) + '. O Mac que roda o bot pode estar desligado, dormindo ou sem internet; os números abaixo são da última atualização.');
+    else if (!REMOTA && (Date.now() - new Date(A.gerado_em).getTime()) / 1000 > 120)
+      avisos.push('Os dados desta página foram gerados há ' + ago(A.gerado_em) + '. Para atualizar sozinho, deixe rodando no Terminal: <code>python3 grafo/assets/gerar_atividade.py --acompanhar 30</code>');
+    if (st.kill_switch) avisos.push('Kill switch do gestor de risco ativo: ' + esc(st.kill_switch));
+    if (st.estado === 'erro') avisos.push('Sessão terminou com erro: ' + esc(st.erro));
+    $('#alert').hidden = !avisos.length;
+    $('#alert').innerHTML = avisos.join('<br>');
+
+    // ---- KPIs ----
+    $('#hero').innerHTML =
+      kpi('Capital inicial', money(cap), 'definido em config/simulacao.json') +
+      kpi('Patrimônio atual', money(pat), 'saldo + posições a preço de mercado', 'accent') +
+      kpi('Lucro / prejuízo total', '<span class="' + tone(total) + '">' + arrow(total) + money(total, true) + '</span>', '<span class="' + tone(total) + '">' + pct(totalPct) + '</span> sobre o capital inicial · já com taxas') +
+      kpi('Saldo disponível', money(saldo), 'em ' + esc(MOEDA) + ', fora de posições');
+    $('#small').innerHTML =
+      kpi('Compras', compras.length, money(gasto) + ' gastos') +
+      kpi('Vendas', vendas.length, money(recebido) + ' recebidos' + (vendas.length ? ' · ' + ganhos + ' com lucro, ' + perdas + ' com perda' : '')) +
+      kpi('Resultado realizado', '<span class="' + tone(r.pnl_realizado) + '">' + money(r.pnl_realizado, true) + '</span>', 'das vendas já feitas') +
+      kpi('Não realizado', '<span class="' + tone(naoReal) + '">' + money(naoReal, true) + '</span>', 'posições abertas, se vendesse agora') +
+      kpi('Taxas pagas', money(r.taxas_total), 'taxa simulada ' + esc(A.config.taxa_pct) + '% por ordem') +
+      kpi('Bloqueadas pelo risco', S.rejeicoes.length, 'ordens vetadas antes de executar');
+
+    renderChart(S, cap);
+    renderOps(S);
+    renderPos(S, r);
+    renderDec(S);
+    $('#foot').innerHTML = (FOTO ? 'Retrato publicado a partir do Mac que roda o bot. ' : REMOTA ? 'Atualizado automaticamente a partir do Mac que roda o bot (a cada ~2–5 min). ' : 'Fonte: <code>' + esc(S.pasta) + '/</code> (status.json, diario.jsonl, motor.jsonl) · capital e limites de <code>config/simulacao.json</code>. ') +
+      'Tudo aqui é <b>simulação paper</b> com dinheiro fictício e cotações públicas da Binance. LIVE_TRADING = ' + esc(String(st.LIVE_TRADING)) + '. ' +
+      'Esta página só lê arquivos locais e não envia ordens.';
+  }
+
+  // ---- gráfico de patrimônio ----
+  let chartPts = [];
+  function renderChart(S, cap) {
+    const el = $('#chart');
+    const t0 = S.id.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/, '$1-$2-$3T$4:$5:$6Z');
+    const pts = [{ instante: t0, patrimonio: cap, inicio: true }].concat(S.historico || [])
+      .map((p) => ({ t: new Date(p.instante).getTime(), v: num(p.patrimonio), p: p })).filter((p) => !isNaN(p.t));
+    chartPts = pts;
+    $('#chartNote').textContent = (S.historico || []).length + ' registros · 1 por ciclo enquanto o gerador está rodando';
+    if (pts.length < 2) {
+      el.innerHTML = '<div class="empty"><div><b>Ainda sem histórico</b>O gráfico aparece a partir do primeiro ciclo registrado.</div></div>';
+      return;
+    }
+    const W = el.clientWidth || 800, H = el.clientHeight || 260, m = { l: 74, r: 16, t: 14, b: 26 };
+    let lo = Math.min(cap, ...pts.map((p) => p.v)), hi = Math.max(cap, ...pts.map((p) => p.v));
+    const pad = Math.max((hi - lo) * 0.15, cap * 0.004);
+    lo -= pad; hi += pad;
+    const tMin = pts[0].t, tMax = Math.max(pts[pts.length - 1].t, tMin + 60000);
+    const x = (t) => m.l + ((t - tMin) / (tMax - tMin)) * (W - m.l - m.r);
+    const y = (v) => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+    const ticks = 4, yt = [], xt = [];
+    for (let i = 0; i <= ticks; i++) yt.push(lo + ((hi - lo) * i) / ticks);
+    for (let i = 0; i <= 4; i++) xt.push(tMin + ((tMax - tMin) * i) / 4);
+    const path = pts.map((p, i) => (i ? 'L' : 'M') + x(p.t).toFixed(1) + ',' + y(p.v).toFixed(1)).join('');
+    const area = path + 'L' + x(pts[pts.length - 1].t).toFixed(1) + ',' + (H - m.b) + 'L' + x(pts[0].t).toFixed(1) + ',' + (H - m.b) + 'Z';
+    const hm = (t) => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Patrimônio ao longo da sessão comparado ao capital inicial">' +
+      '<defs><linearGradient id="gArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8f7bff" stop-opacity=".22"/><stop offset="1" stop-color="#8f7bff" stop-opacity="0"/></linearGradient></defs>' +
+      '<g class="grid">' + yt.map((v) => '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>').join('') + '</g>' +
+      '<g class="axis">' + yt.map((v) => '<text x="' + (m.l - 8) + '" y="' + (y(v) + 3.5) + '" text-anchor="end">' + money(v) + '</text>').join('') +
+      xt.map((t) => '<text x="' + x(t) + '" y="' + (H - 6) + '" text-anchor="middle">' + hm(t) + '</text>').join('') + '</g>' +
+      '<path class="area" d="' + area + '"/>' +
+      '<line class="base" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(cap) + '" y2="' + y(cap) + '"/>' +
+      '<text class="lbl-base" x="' + (W - m.r) + '" y="' + (y(cap) - 6) + '" text-anchor="end">capital inicial ' + money(cap) + '</text>' +
+      '<path class="line" d="' + path + '"/>' +
+      '<line class="cross" id="cross" y1="' + m.t + '" y2="' + (H - m.b) + '" visibility="hidden"/>' +
+      '<circle class="dot" id="cdot" r="5" visibility="hidden"/>' +
+      '<rect x="' + m.l + '" y="0" width="' + (W - m.l - m.r) + '" height="' + H + '" fill="transparent" id="hit"/></svg>';
+    const svg = el.querySelector('svg'), tip = $('#tip');
+    const move = (e) => {
+      const b = svg.getBoundingClientRect(), mx = ((e.clientX - b.left) / b.width) * W;
+      let best = pts[0];
+      pts.forEach((p) => { if (Math.abs(x(p.t) - mx) < Math.abs(x(best.t) - mx)) best = p; });
+      const cx = x(best.t), cy = y(best.v);
+      svg.querySelector('#cross').setAttribute('x1', cx); svg.querySelector('#cross').setAttribute('x2', cx);
+      svg.querySelector('#cross').setAttribute('visibility', 'visible');
+      const d = svg.querySelector('#cdot'); d.setAttribute('cx', cx); d.setAttribute('cy', cy); d.setAttribute('visibility', 'visible');
+      const diff = best.v - cap;
+      tip.innerHTML = '<b>' + money(best.v) + '</b> <span class="' + tone(diff) + '">' + money(diff, true) + '</span><small>' +
+        (best.p.inicio ? 'início da sessão (capital inicial)' : when(best.p.instante) + ' · ciclo ' + esc(best.p.ciclo)) + '</small>';
+      tip.hidden = false;
+      tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px';
+    };
+    const hit = svg.querySelector('#hit');
+    hit.addEventListener('pointermove', move);
+    hit.addEventListener('pointerleave', () => {
+      tip.hidden = true;
+      svg.querySelector('#cross').setAttribute('visibility', 'hidden');
+      svg.querySelector('#cdot').setAttribute('visibility', 'hidden');
+    });
+  }
+
+  function renderOps(S) {
+    const ops = S.operacoes.slice().reverse();
+    $('#opsNote').textContent = ops.length ? ops.length + ' operações · mais recentes primeiro' : '';
+    if (!ops.length) {
+      const c = S.contagem_decisoes || {}, n = Object.values(c).reduce((a, b) => a + b, 0);
+      $('#ops').innerHTML = '<div class="empty"><div><b>Nenhuma compra ou venda ainda</b>' +
+        'O motor analisou ' + n + ' vezes nesta sessão e decidiu: ' + Object.entries(c).map(([k, v]) => esc(k) + ' ' + v + '×').join(', ') +
+        '.<br>Uma compra só acontece quando há sinal e o gestor de risco aprova.</div></div>';
+      return;
+    }
+    $('#ops').innerHTML = '<table><thead><tr><th>Quando</th><th>Ativo</th><th>Lado</th><th class="r">Quantidade</th><th class="r">Preço</th><th class="r">Valor</th><th class="r">Taxa</th><th class="r">Resultado</th></tr></thead><tbody>' +
+      ops.map((o) => {
+        const buy = o.lado === 'COMPRA';
+        return '<tr><td>' + when(o.instante) + '</td><td><b>' + esc(o.simbolo) + '</b></td><td><span class="side ' + (buy ? 'buy' : 'sell') + '">' + (buy ? '↓ COMPRA' : '↑ VENDA') + '</span></td>' +
+          '<td class="r">' + qty(o.qtd) + '</td><td class="r">' + money(o.preco) + '</td><td class="r">' + (buy ? '−' : '+') + money(o.valor) + '</td>' +
+          '<td class="r">' + money(o.taxa_cotacao) + '</td><td class="r">' + (o.resultado == null ? '<span class="muted">—</span>' : '<span class="' + tone(o.resultado) + '">' + arrow(o.resultado) + money(o.resultado, true) + '</span>') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  function renderPos(S, r) {
+    const pos = r.posicoes || {}, ks = Object.keys(pos);
+    $('#pos').innerHTML = ks.length ? '<table><thead><tr><th>Ativo</th><th class="r">Quantidade</th><th class="r">Custo</th><th class="r">Stop ref.</th></tr></thead><tbody>' +
+      ks.map((s) => '<tr><td><b>' + esc(s) + '</b></td><td class="r">' + qty(pos[s].qtd) + '</td><td class="r">' + money((S.posicoes_custo[s] || {}).custo) + '</td><td class="r">' +
+        (pos[s].stop_referencia && pos[s].stop_referencia !== 'None' ? money(pos[s].stop_referencia) : '—') + '</td></tr>').join('') + '</tbody></table>'
+      : '<div class="empty" style="min-height:70px">Nenhuma posição aberta. Todo o patrimônio está em saldo.</div>';
+    $('#rej').innerHTML = S.rejeicoes.length ? '<table><thead><tr><th>Quando</th><th>Ativo</th><th>Motivo</th></tr></thead><tbody>' +
+      S.rejeicoes.slice().reverse().map((x) => '<tr><td>' + when(x.instante) + '</td><td><b>' + esc(x.simbolo) + '</b> ' + esc(x.lado) + '</td><td style="white-space:normal">' + esc(x.acao) + ': ' + esc((x.motivos || []).join('; ')) + '</td></tr>').join('') + '</tbody></table>'
+      : '<div class="empty" style="min-height:60px">Nenhuma ordem bloqueada.</div>';
+  }
+
+  function renderDec(S) {
+    const c = S.contagem_decisoes || {};
+    $('#decNote').innerHTML = Object.entries(c).map(([k, v]) => esc(k) + ': ' + v).join(' · ');
+    const L = { ema_rapida: 'EMA rápida', ema_lenta: 'EMA lenta', rsi: 'RSI', macd_hist: 'MACD hist.', atr: 'ATR', fechamento: 'Fechamento' };
+    $('#dec').innerHTML = (S.ultimas_decisoes || []).map((d) => {
+      const k = String(d.decisao).toLowerCase();
+      const cls = k.includes('abster') ? 'abster' : k.includes('sinal') ? 'sinal' : k.includes('execut') ? 'executada' : k.includes('rejeit') ? 'rejeitada' : k.includes('observ') ? 'observar' : '';
+      return '<div class="dec"><div class="dec-h"><b>' + esc(d.simbolo) + '</b><span class="badge ' + cls + '">' + esc(d.decisao) + '</span></div>' +
+        (d.motivos.length ? '<ul>' + d.motivos.map((m) => '<li>' + esc(m) + '</li>').join('') + '</ul>' : '') +
+        '<div class="ind">' + Object.entries(d.indicadores || {}).map(([n, v]) => '<span>' + esc(L[n] || n) + ' <b>' + esc(n === 'fechamento' ? money(v) : qty(v)) + '</b></span>').join('') + '</div>' +
+        (d.incertezas.length ? '<small>Incertezas: ' + esc(d.incertezas.join(' · ')) + '</small>' : '') +
+        '<small>' + when(d.instante) + ' · ciclo ' + esc(d.ciclo) + '</small></div>';
+    }).join('') || '<div class="empty">Sem decisões registradas.</div>';
+  }
+
+  // Versão publicada: busca o JSON enviado pelo Mac (window.CERBERO_FONTE_REMOTA).
+  const REMOTA = window.CERBERO_FONTE_REMOTA;
+  function reloadRemote() {
+    fetch(REMOTA + '?t=' + Date.now(), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => { window.CERBERO_ATIVIDADE = d; render(); })
+      .catch(() => { if (!window.CERBERO_ATIVIDADE) $('#hero').innerHTML = '<div class="card empty">Não foi possível carregar os dados agora. Tente de novo em alguns minutos.</div>'; });
+  }
+  // Recarrega o arquivo de dados (funciona abrindo direto do Finder, sem servidor).
+  function reload() {
+    const old = $('#dataScript'), s = document.createElement('script');
+    s.src = 'assets/atividade-data.js?t=' + Date.now();
+    s.id = 'dataScript';
+    s.onload = () => { old.remove(); render(); };
+    s.onerror = () => s.remove();
+    document.body.appendChild(s);
+  }
+  if (REMOTA) { reloadRemote(); setInterval(reloadRemote, 60000); }
+  else if (window.CERBERO_FOTO) render();
+  else { render(); setInterval(reload, 20000); }
+  setInterval(() => { const a = $('#age'); if (a && window.CERBERO_ATIVIDADE) a.textContent = ago(window.CERBERO_ATIVIDADE.gerado_em); }, 5000);
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 150); });
+})();

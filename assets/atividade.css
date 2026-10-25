@@ -19,6 +19,7 @@ html:has(body.dash) { overflow: auto; }
 .dash-main { max-width: 1320px; margin: 0 auto; padding: 22px 24px 40px; display: flex; flex-direction: column; gap: 16px; }
 .muted { color: var(--muted); font-size: 12px; }
 .alert { padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,194,74,.4); background: rgba(255,194,74,.08); color: #ffe2a3; font-size: 12.5px; }
+.alert.reprovado { border-color: rgba(255,99,99,.55); background: rgba(255,99,99,.10); color: #ffc9c9; font-weight: 600; }
 
 .kpis { display: grid; gap: 12px; }
 .kpis.hero { grid-template-columns: repeat(4, minmax(0, 1fr)); }

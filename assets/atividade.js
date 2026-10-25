@@ -34,11 +34,20 @@
     $('#live').innerHTML = '<span class="pulse ' + (ok ? '' : 'warn') + '"></span><div><b>' + esc(A.estado) +
       '</b> · ciclo ' + esc(h.ciclos) + '<br>Observador: ' + when(A.status_utc) + ' · publicação: ' + when(A.gerado_em) + '</div>';
     const avisos = [];
+    const V = A.validacao || {};
+    const nomes = Object.keys(V.estrategias || {});
+    if (!nomes.length || !V.aprovadas) {
+      avisos.push('ESTRATÉGIAS NÃO APROVADAS: ' + (nomes.length ? nomes.map((e) => e + ' (' + V.estrategias[e] + ')').join(', ')
+        : 'status de validação indisponível') + '. Nenhuma tem vantagem estatística comprovada no backtest fora da amostra' +
+        (V.politica === 'bloquear' ? '; o robô NÃO abre novas posições (decisão: não operar).' : '; posições do paper são só teste de infraestrutura.') +
+        ' Resultados de simulação não são lucro.');
+    }
     if (!recente) avisos.push('Observador sem atualização recente. Estes são os últimos dados recebidos; verifique o Mac e a conexão.');
     if (h.erros_seguidos) avisos.push('Observação degradada: ' + h.erros_seguidos + ' erros consecutivos.');
     if (h.circuito_futuros_aberto) avisos.push('Coleta de Futuros temporariamente em pausa.');
     if (window.CERBERO_FETCH_FALHOU) avisos.push('Falha ao buscar a publicação. Exibindo a última versão recebida.');
     $('#alert').hidden = !avisos.length; $('#alert').textContent = avisos.join(' ');
+    $('#alert').classList.toggle('reprovado', !V.aprovadas);
     const P = A.paper;
     $('.brand p').textContent = P ? 'Teste em papel · Futuros USD-M · dinheiro fictício · nenhuma ordem real'
       : 'Observação somente leitura · hipóteses não validadas · sem ordens ou posições';
@@ -71,7 +80,7 @@
       esc(x.preco_referencia) + ' USDT · stop teórico: ' + esc(x.stop_referencia) + ' USDT</div><small>' + when(x.instante_utc) +
       ' · validade: ' + when(x.validade_utc) + (Date.parse(x.validade_utc) < Date.now() ? ' (expirada)' : '') + '</small></div>').join('') ||
       '<div class="empty">Nenhuma oportunidade teórica registrada.</div>';
-    if (P) { $('#foot').textContent = 'Teste em papel: posições fictícias simuladas com cotações públicas, taxas, spread, slippage e funding. Nenhuma ordem é enviada à Binance. Estratégias sem backtest validado; avalie só após ~100 operações fechadas. Publicação a cada 120 s; o Mac precisa permanecer ligado.'; return; }
+    if (P) { $('#foot').textContent = 'Teste em papel: posições fictícias simuladas com cotações públicas, taxas, spread, slippage e funding. Nenhuma ordem é enviada à Binance. As estratégias atuais foram reprovadas no backtest walk-forward (expectativa líquida negativa); o paper não comprova lucro. Publicação a cada 120 s; o Mac precisa permanecer ligado.'; return; }
     $('#foot').textContent = 'Somente leitura de cotações públicas. Hipóteses sem backtest validado; nenhuma ordem ou posição, real ou fictícia. Publicação automática a cada 120 s, consulta a cada 60 s. O Mac precisa permanecer ligado e conectado.';
   }
 

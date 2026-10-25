@@ -87,6 +87,11 @@
         kpi('H2: carteira 5.000', money(hp.patrimonio) + ' USDT', ((hp.resultado_pct ?? 0) >= 0 ? '+' : '') + (hp.resultado_pct ?? 0) + '% · ' + hp.posicoes + ' posições' + (hp.kill_switch ? ' · KILL SWITCH' : '')) +
         kpi('H2: carteira 230', money(hv.patrimonio) + ' USDT', (hv.inviabilidades ? hv.inviabilidades + ' semana(s) inviável(is) pelo mínimo da Binance' : hv.posicoes + ' posições'));
     }
+    const CB = A.cerebro;
+    if (CB) {
+      $('#small').innerHTML += kpi('Cérebro: 16 famílias', CB.familias_no_laco + ' no laço', CB.familias_nao_iniciadas + ' ainda não iniciadas') +
+        kpi('Agentes de IA', CB.agentes_instalados + ' instalados', CB.agentes_no_laco_de_decisao + ' decidem · ' + CB.agentes_consultivos + ' só consultivos');
+    }
     $('#chart').closest('section').hidden = true;
     if (P) renderPaper(P); else $('#ops').closest('.grid2').style.display = 'none';
     $('#dec').previousElementSibling.querySelector('h2').textContent = 'Sinais hipotéticos recentes';

@@ -70,6 +70,16 @@
       kpi('Erros consecutivos', h.erros_seguidos ?? '—') + kpi('Erros totais', h.erros_total ?? '—') +
       kpi('Cobertura Spot', (h.spot_ultima_cobertura_pct ?? '—') + '%', when(h.spot_ultima_utc)) +
       kpi('Último ciclo saudável', when(h.ultimo_ciclo_ok_utc));
+    const L = A.intraday_lab;
+    if (L) {
+      const cp = (L.carteiras || {}).pesquisa || {}, cv = (L.carteiras || {}).viabilidade || {};
+      const aprov = Object.values(L.estrategias || {}).filter((v) => v === 'experimental-paper').length;
+      $('#small').innerHTML += kpi('Intraday lab', esc(L.estado), (L.analises_5m ?? 0) + ' análises de 5 min · ' + (L.moedas_universo ?? 0) + ' moedas') +
+        kpi('Lab: carteira 5.000', money(cp.patrimonio) + ' USDT', (cp.operacoes ?? 0) + ' operações · ' + cp.posicoes + ' abertas') +
+        kpi('Lab: carteira 230', money(cv.patrimonio) + ' USDT', (cv.operacoes ?? 0) + ' operações · ' + cv.posicoes + ' abertas') +
+        kpi('Lab: sinais', L.sinais_total ?? 0, aprov ? aprov + ' estratégia(s) em teste' : 'todas reprovadas na triagem: não opera') +
+        kpi('Lab: sombra (hipotético)', (L.sombra || {}).operacoes ?? 0, 'R médio ' + ((L.sombra || {}).r_medio ?? '—') + ' · não é lucro');
+    }
     $('#chart').closest('section').hidden = true;
     if (P) renderPaper(P); else $('#ops').closest('.grid2').style.display = 'none';
     $('#dec').previousElementSibling.querySelector('h2').textContent = 'Sinais hipotéticos recentes';

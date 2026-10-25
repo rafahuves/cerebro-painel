@@ -80,6 +80,13 @@
         kpi('Lab: sinais', L.sinais_total ?? 0, aprov ? aprov + ' estratégia(s) em teste' : 'todas reprovadas na triagem: não opera') +
         kpi('Lab: sombra (hipotético)', (L.sombra || {}).operacoes ?? 0, 'R médio ' + ((L.sombra || {}).r_medio ?? '—') + ' · não é lucro');
     }
+    const H2 = A.h2;
+    if (H2) {
+      const hp = (H2.carteiras || {}).pesquisa || {}, hv = (H2.carteiras || {}).viabilidade || {};
+      $('#small').innerHTML += kpi('H2 semanal', esc(H2.estado), 'exposição máx. ' + (H2.exposicao_max ?? '—') + 'x · próxima ' + when(H2.proxima_avaliacao_utc)) +
+        kpi('H2: carteira 5.000', money(hp.patrimonio) + ' USDT', ((hp.resultado_pct ?? 0) >= 0 ? '+' : '') + (hp.resultado_pct ?? 0) + '% · ' + hp.posicoes + ' posições' + (hp.kill_switch ? ' · KILL SWITCH' : '')) +
+        kpi('H2: carteira 230', money(hv.patrimonio) + ' USDT', (hv.inviabilidades ? hv.inviabilidades + ' semana(s) inviável(is) pelo mínimo da Binance' : hv.posicoes + ' posições'));
+    }
     $('#chart').closest('section').hidden = true;
     if (P) renderPaper(P); else $('#ops').closest('.grid2').style.display = 'none';
     $('#dec').previousElementSibling.querySelector('h2').textContent = 'Sinais hipotéticos recentes';

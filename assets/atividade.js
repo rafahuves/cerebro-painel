@@ -108,6 +108,14 @@
         kpi('Hipóteses p/ laboratório', P3.hipoteses_laboratorio ?? 0, 'aguardam pré-registro e backtest') +
         kpi('Erros do cérebro', P3.erros_recentes ?? 0, (P3.mortas ?? 0) + ' mensagens mortas · ' + (P3.erros_seguidos ?? 0) + ' ciclos seguidos com erro');
     }
+    const N = A.noite;
+    if (N && N.fim_utc) {
+      $('#small').innerHTML += kpi('Relatório da noite', (N.horas ?? '—') + ' h', when(N.inicio_utc) + ' → ' + when(N.fim_utc)) +
+        kpi('Noite: operações simuladas', N.operacoes ?? 0, (N.fechamentos_sombra_hipotetica ?? 0) + ' fechamentos hipotéticos da sombra (não é lucro)') +
+        kpi('Noite: sinais', N.sinais_lab ?? 0, (N.oportunidades_observador ?? 0) + ' oportunidades teóricas no observador') +
+        kpi('Noite: IA gratuita', (N.chamadas_ia ?? 0) + ' chamadas', 'custo US$ ' + (N.custo_ia_usd ?? 0).toFixed(2)) +
+        kpi('Noite: erros e reinícios', (N.erros ?? 0) + ' erros', (N.reinicios ?? 0) + ' reinícios de serviço');
+    }
     $('#chart').closest('section').hidden = true;
     if (P) renderPaper(P); else $('#ops').closest('.grid2').style.display = 'none';
     $('#dec').previousElementSibling.querySelector('h2').textContent = 'Sinais hipotéticos recentes';

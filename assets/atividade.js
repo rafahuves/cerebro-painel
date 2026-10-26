@@ -107,6 +107,23 @@
         kpi('Notícias (24 h)', P3.noticias_24h ?? 0, (P3.noticias_relevantes_24h ?? 0) + ' relevantes · não verificadas') +
         kpi('Hipóteses p/ laboratório', P3.hipoteses_laboratorio ?? 0, 'aguardam pré-registro e backtest') +
         kpi('Erros do cérebro', P3.erros_recentes ?? 0, (P3.mortas ?? 0) + ' mensagens mortas · ' + (P3.erros_seguidos ?? 0) + ' ciclos seguidos com erro');
+      const FS = P3.familias_status || {};
+      const ft = Object.values(FS).filter((v) => v === 'IMPLEMENTADA E TESTADA').length;
+      if (Object.keys(FS).length) $('#small').innerHTML += kpi('16 famílias de especialistas', ft + ' implementadas e testadas',
+        Object.values(FS).filter((v) => v === 'IMPLEMENTADA NÃO VALIDADA').length + ' não validadas · ' + Object.values(FS).filter((v) => v === 'PLANEJADA' || v === 'BLOQUEADA').length + ' planejadas/bloqueadas');
+      const G = P3.mercados_globais || {};
+      const nomes = { SPYUSDT: 'S&P 500 (SPY)', QQQUSDT: 'Nasdaq-100 (QQQ)', IWMUSDT: 'Russell 2000 (IWM)', EWZUSDT: 'Brasil (EWZ)', XAUUSDT: 'Ouro', XAGUSDT: 'Prata',
+        CLUSDT: 'Petróleo WTI', BZUSDT: 'Petróleo Brent', COPPERUSDT: 'Cobre', NATGASUSDT: 'Gás natural', USDBRLUSDT: 'USD/BRL', BTCDOMUSDT: 'Dominância BTC',
+        NVDAUSDT: 'Nvidia', MSTRUSDT: 'MicroStrategy', COINUSDT: 'Coinbase' };
+      Object.entries(nomes).forEach(([k, n]) => { const x = G[k]; if (!x) return;
+        $('#small').innerHTML += kpi(n, money(x.preco), ((x.var_24h_pct ?? 0) >= 0 ? '+' : '') + (x.var_24h_pct ?? '—') + '% 24 h · ' +
+          (x.subjacente_aberto ? 'mercado aberto' : 'mercado fechado: indicativo') + ' · proxy Binance, só observação'); });
+      const F = G.fred || {};
+      const fn = { VIXCLS: 'VIX', DGS10: 'Treasury 10 anos', DTWEXBGS: 'Dólar amplo (Fed)', SP500: 'S&P 500 oficial', DCOILWTICO: 'WTI oficial', DEXBZUS: 'BRL por USD oficial' };
+      Object.entries(fn).forEach(([k, n]) => { const x = F[k]; if (x) $('#small').innerHTML += kpi(n, x.valor, 'FRED · dado oficial atrasado de ' + esc(x.data || '—')); });
+      const C = G.cripto || {};
+      if (C.contratos_elegiveis) $('#small').innerHTML += kpi('Cripto: todos os perpétuos', C.contratos_elegiveis + ' monitorados',
+        (C.pct_em_alta_24h ?? '—') + '% em alta em 24 h · ' + (C.liquidos ?? 0) + ' com liquidez suficiente');
     }
     const N = A.noite;
     if (N && N.fim_utc) {

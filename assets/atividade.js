@@ -92,6 +92,22 @@
       $('#small').innerHTML += kpi('Cérebro: 16 famílias', CB.familias_no_laco + ' no laço', CB.familias_nao_iniciadas + ' ainda não iniciadas') +
         kpi('Agentes de IA', CB.agentes_instalados + ' instalados', CB.agentes_no_laco_de_decisao + ' decidem · ' + CB.agentes_consultivos + ' só consultivos');
     }
+    const P3 = A.cerebro_p3;
+    if (P3) {
+      const fv = Object.values(P3.fontes || {}), ok = fv.filter((f) => f.ok === true).length, pend = fv.filter((f) => f.situacao === 'pendente').length;
+      const esp = Object.values(P3.especialistas || {}).filter((e) => e.ativo).length;
+      const acion = Object.entries(P3.agentes || {}).filter(([, v]) => v.acionamentos_24h).map(([k, v]) => k + ' ' + v.acionamentos_24h);
+      const mod = Object.entries(P3.modelos || {}).map(([k, v]) => k + ': ' + (v === 'disponivel' ? 'conectado' : (v || '?').replace('_', ' '))).join(' · ');
+      $('#small').innerHTML += kpi('Cérebro P3', esc(P3.estado), 'observação · ' + (P3.ciclos ?? 0) + ' ciclos · ' + when(P3.atualizado_utc)) +
+        kpi('Fontes de dados', ok + ' funcionando', pend + ' pendentes de configuração' + (fv.some((f) => f.ok === false) ? ' · há falhas' : '')) +
+        kpi('Especialistas Python', esp + ' ativos', (P3.mensagens_24h ?? 0) + ' mensagens no barramento em 24 h') +
+        kpi('Agentes acionados (24 h)', acion.length, esc(acion.join(', ') || 'nenhum')) +
+        kpi('Modelos de linguagem', 'US$ ' + (P3.custo_hoje_usd ?? 0).toFixed(2) + ' hoje', esc(mod)) +
+        kpi('Consensos (24 h)', P3.consensos_24h ?? 0, (P3.concordancias_24h ?? 0) + ' concordâncias · ' + (P3.divergencias_24h ?? 0) + ' divergências · não autorizam operação') +
+        kpi('Notícias (24 h)', P3.noticias_24h ?? 0, (P3.noticias_relevantes_24h ?? 0) + ' relevantes · não verificadas') +
+        kpi('Hipóteses p/ laboratório', P3.hipoteses_laboratorio ?? 0, 'aguardam pré-registro e backtest') +
+        kpi('Erros do cérebro', P3.erros_recentes ?? 0, (P3.mortas ?? 0) + ' mensagens mortas · ' + (P3.erros_seguidos ?? 0) + ' ciclos seguidos com erro');
+    }
     $('#chart').closest('section').hidden = true;
     if (P) renderPaper(P); else $('#ops').closest('.grid2').style.display = 'none';
     $('#dec').previousElementSibling.querySelector('h2').textContent = 'Sinais hipotéticos recentes';

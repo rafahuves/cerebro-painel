@@ -75,8 +75,8 @@
       const cp = (L.carteiras || {}).pesquisa || {}, cv = (L.carteiras || {}).viabilidade || {};
       const aprov = Object.values(L.estrategias || {}).filter((v) => v === 'experimental-paper').length;
       $('#small').innerHTML += kpi('Intraday lab', esc(L.estado), (L.analises_5m ?? 0) + ' análises de 5 min · ' + (L.moedas_universo ?? 0) + ' moedas') +
-        kpi('Lab: carteira 5.000', money(cp.patrimonio) + ' USDT', (cp.operacoes ?? 0) + ' operações · ' + cp.posicoes + ' abertas') +
-        kpi('Lab: carteira 230', money(cv.patrimonio) + ' USDT', (cv.operacoes ?? 0) + ' operações · ' + cv.posicoes + ' abertas') +
+        kpi('Lab: pesquisa 5.000 (fictícia)', money(cp.patrimonio) + ' USDT', 'capital fictício, não é o capital do usuário · ' + (cp.operacoes ?? 0) + ' operações · ' + cp.posicoes + ' abertas') +
+        kpi('Lab: carteira 230 (viabilidade)', money(cv.patrimonio) + ' USDT', (cv.operacoes ?? 0) + ' operações · ' + cv.posicoes + ' abertas') +
         kpi('Lab: sinais', L.sinais_total ?? 0, aprov ? aprov + ' estratégia(s) em teste' : 'todas reprovadas na triagem: não opera') +
         kpi('Lab: sombra (hipotético)', (L.sombra || {}).operacoes ?? 0, 'R médio ' + ((L.sombra || {}).r_medio ?? '—') + ' · não é lucro');
     }
@@ -84,8 +84,8 @@
     if (H2) {
       const hp = (H2.carteiras || {}).pesquisa || {}, hv = (H2.carteiras || {}).viabilidade || {};
       $('#small').innerHTML += kpi('H2 semanal', esc(H2.estado), 'exposição máx. ' + (H2.exposicao_max ?? '—') + 'x · próxima ' + when(H2.proxima_avaliacao_utc)) +
-        kpi('H2: carteira 5.000', money(hp.patrimonio) + ' USDT', ((hp.resultado_pct ?? 0) >= 0 ? '+' : '') + (hp.resultado_pct ?? 0) + '% · ' + hp.posicoes + ' posições' + (hp.kill_switch ? ' · KILL SWITCH' : '')) +
-        kpi('H2: carteira 230', money(hv.patrimonio) + ' USDT', (hv.inviabilidades ? hv.inviabilidades + ' semana(s) inviável(is) pelo mínimo da Binance' : hv.posicoes + ' posições'));
+        kpi('H2: pesquisa 5.000 (fictícia)', money(hp.patrimonio) + ' USDT', 'capital fictício, não é o capital do usuário · ' + ((hp.resultado_pct ?? 0) >= 0 ? '+' : '') + (hp.resultado_pct ?? 0) + '% · ' + hp.posicoes + ' posições' + (hp.kill_switch ? ' · KILL SWITCH' : '')) +
+        kpi('H2: carteira 230 (viabilidade, paper)', money(hv.patrimonio) + ' USDT', (hv.inviabilidades ? hv.inviabilidades + ' semana(s) inviável(is) pelo mínimo da Binance' : hv.posicoes + ' posições'));
     }
     const CB = A.cerebro;
     if (CB) {

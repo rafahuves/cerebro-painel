@@ -87,6 +87,14 @@
         kpi('H2: pesquisa 5.000 (fictícia)', money(hp.patrimonio) + ' USDT', 'capital fictício, não é o capital do usuário · ' + ((hp.resultado_pct ?? 0) >= 0 ? '+' : '') + (hp.resultado_pct ?? 0) + '% · ' + hp.posicoes + ' posições' + (hp.kill_switch ? ' · KILL SWITCH' : '')) +
         kpi('H2: carteira 230 (viabilidade, paper)', money(hv.patrimonio) + ' USDT', (hv.inviabilidades ? hv.inviabilidades + ' semana(s) inviável(is) pelo mínimo da Binance' : hv.posicoes + ' posições'));
     }
+    const X = A.h2_230a;
+    if (X) {
+      const xc = X.carteira || {}, desde = X.h2_pesquisa_mesmo_periodo_pct;
+      $('#small').innerHTML += kpi('H2-230-A · PAPER — experimental', money(xc.patrimonio) + ' USDT',
+        'reprovada no backtest; experimento autorizado · ' + ((xc.resultado_pct ?? 0) >= 0 ? '+' : '') + (xc.resultado_pct ?? 0) + '% · ' +
+        xc.posicoes + ' posições · kill switch ' + (X.kill_switch_drawdown_pct ?? '—') + '%' + (xc.kill_switch ? ' · KILL SWITCH' : '') +
+        (desde != null ? ' · H2 pesquisa no mesmo período ' + (desde >= 0 ? '+' : '') + desde + '%' : ' · comparação com a H2 pesquisa: aguardando'));
+    }
     const CB = A.cerebro;
     if (CB) {
       $('#small').innerHTML += kpi('Cérebro: 16 famílias', CB.familias_no_laco + ' no laço', CB.familias_nao_iniciadas + ' ainda não iniciadas') +
